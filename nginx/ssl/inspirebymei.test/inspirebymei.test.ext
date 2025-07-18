@@ -5,3 +5,4 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = inspirebymei.test
 DNS.2 = *.inspirebymei.test
+DNS.3 = nginx
