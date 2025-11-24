@@ -1,0 +1,78 @@
+version: '3.8'
+
+# Performance optimizations for WSL2 + Docker
+# Key optimization: Named volumes for vendor/node_modules avoid bind mount overhead
+volumes:
+  vendor:
+    driver: local
+  node_modules:
+    driver: local
+
+services:
+  workspace:
+    volumes:
+      # Override volume mount with optimized settings for WSL2
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      # Use named volumes for vendor and node_modules (MASSIVE performance boost in WSL2)
+      - vendor:${APP_CODE_PATH_CONTAINER}/vendor
+      - node_modules:${APP_CODE_PATH_CONTAINER}/node_modules
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  php-fpm:
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      # Use named volumes for vendor and node_modules (MASSIVE performance boost in WSL2)
+      - vendor:${APP_CODE_PATH_CONTAINER}/vendor
+      - node_modules:${APP_CODE_PATH_CONTAINER}/node_modules
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - PHP_FPM_PM_MAX_CHILDREN=50
+      - PHP_FPM_PM_START_SERVERS=10
+      - PHP_FPM_PM_MIN_SPARE_SERVERS=5
+      - PHP_FPM_PM_MAX_SPARE_SERVERS=20
+
+  php-worker:
+    volumes:
+      - vendor:${APP_CODE_PATH_CONTAINER}/vendor
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mariadb:
+    command:
+      - --innodb-buffer-pool-size=2G
+      - --innodb-log-file-size=512M
+      - --innodb-flush-log-at-trx-commit=2
+      - --innodb-flush-method=O_DIRECT
+      - --query-cache-size=0
+      - --query-cache-type=0
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass secret_redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
