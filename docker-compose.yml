@@ -3,6 +3,9 @@ networks:
     driver: ${NETWORKS_DRIVER}
   backend:
     driver: ${NETWORKS_DRIVER}
+  shared:
+    external: true
+    name: inspire-shared
 volumes:
   mysql:
     driver: ${VOLUMES_DRIVER}
@@ -213,6 +216,7 @@ services:
     networks:
       - frontend
       - backend
+      - shared
     links:
       - docker-in-docker
 
@@ -334,6 +338,7 @@ services:
       - workspace
     networks:
       - backend
+      - shared
     links:
       - docker-in-docker
 
@@ -398,6 +403,7 @@ services:
       - "dockerhost:${DOCKER_HOST_IP}"
     networks:
       - backend
+      - shared
 
   ### Laravel Horizon ############################################
   laravel-horizon:
@@ -471,10 +477,8 @@ services:
       - ${NGINX_HOST_LOG_PATH}:/var/log/nginx
       - ${NGINX_SITES_PATH}:/etc/nginx/sites-available
       - ${NGINX_SSL_PATH}:/etc/nginx/ssl
-    ports:
-      - "${NGINX_HOST_HTTP_PORT}:80"
-      - "${NGINX_HOST_HTTPS_PORT}:443"
-      - "${VARNISH_BACKEND_PORT}:81"
+    environment:
+      - VIRTUAL_HOST=${NGINX_VIRTUAL_HOST}
     depends_on:
       - php-fpm
     networks:
