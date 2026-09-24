@@ -486,6 +486,7 @@ services:
       backend:
         aliases:
           - dundermifflin-2030-paradise.inspirebymei.test
+      shared:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
