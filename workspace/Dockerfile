@@ -1431,15 +1431,20 @@ RUN if [ ${INSTALL_APCU} = true ]; then \
 USER root
 
 ARG INSTALL_MYSQL_CLIENT=false
+ARG INSTALL_MARIADB_CLIENT=false
 ARG INSTALL_PING=false
 ARG INSTALL_SSHPASS=false
 ARG INSTALL_DOCKER_CLIENT=false
 
 RUN set -eux; \
   ###########################################################################
-  # MySQL Client:
+  # MySQL / MariaDB Client:
+  # The two packages conflict, so the MariaDB client wins when both are set.
+  # It also provides `mysql`, and Laravel's MariaDB schema loader needs `mariadb`.
   ###########################################################################
-  if [ ${INSTALL_MYSQL_CLIENT} = true ]; then \
+  if [ ${INSTALL_MARIADB_CLIENT} = true ]; then \
+  apt-get -yqq install mariadb-client; \
+  elif [ ${INSTALL_MYSQL_CLIENT} = true ]; then \
   apt-get -yqq install mysql-client; \
   fi; \
   ###########################################################################
@@ -1910,6 +1915,27 @@ RUN if [ ${INSTALL_GITHUB_CLI} = true ]; then \
   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
   && apt update \
   && apt install gh -y \
+  ;fi
+
+###########################################################################
+# Playwright Chromium (for Pest browser tests):
+# PLAYWRIGHT_VERSION must match the playwright version in the project's
+# package-lock.json, or the browser build won't be found. Requires INSTALL_NODE.
+###########################################################################
+
+USER root
+
+ARG INSTALL_PLAYWRIGHT=false
+ARG PLAYWRIGHT_VERSION=1.64.1
+
+RUN if [ ${INSTALL_PLAYWRIGHT} = true ]; then \
+  npx -y playwright@${PLAYWRIGHT_VERSION} install-deps chromium \
+  ;fi
+
+USER laradock
+
+RUN if [ ${INSTALL_PLAYWRIGHT} = true ]; then \
+  npx -y playwright@${PLAYWRIGHT_VERSION} install chromium \
   ;fi
 
 #
